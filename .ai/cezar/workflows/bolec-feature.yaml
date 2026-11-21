@@ -1,6 +1,6 @@
 version: 2
 name: bolec-feature
-description: "Bolec factory loop: spec gate, self-verification, verdict branching, PR with risk assessment"
+description: "Mini Bolesławiec factory loop: spec gate, self-verification, verdict branching, PR with risk assessment"
 nodes:
   - id: start
     type: start
@@ -14,7 +14,7 @@ nodes:
       Task / idea:
       {{task}}
 
-      Explore the idea in the context of the Bolec project.
+      Explore the idea in the context of the Mini Bolesławiec project.
       Decide the smallest valuable slice and the main architectural trade-offs.
       If a pivot is better, describe the pivoted scope and proceed with it.
       End with CEZ:VERDICT proceed or CEZ:VERDICT defer.

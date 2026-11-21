@@ -1,5 +1,5 @@
 {
-  "name": "bolec",
+  "name": "mini-boleslawiec",
   "private": true,
   "description": "Stylized, explorable 3D model of Bolesławiec and its county",
   "workspaces": ["app"],

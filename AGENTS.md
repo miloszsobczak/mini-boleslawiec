@@ -1,6 +1,6 @@
-# Bolec — rules for agents
+# Mini Bolesławiec — rules for agents
 
-Bolec is a browser-based, stylized 3D model of Bolesławiec and its county, generated
+Mini Bolesławiec is a browser-based, stylized 3D model of Bolesławiec and its county, generated
 automatically from open geodetic data. The full product spec is [PRD.md](PRD.md) (Polish);
 read the relevant section before designing anything. This file is the short list of rules
 that every change must respect.
