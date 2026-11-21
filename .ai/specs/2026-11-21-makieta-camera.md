@@ -104,8 +104,27 @@ events and `resize` wake it. `dt` comes from the rAF timestamp and is clamped to
 
 ### Spike outcome
 
-_To be filled in by Phase 1, Step 1: chosen path, which checks (a)–(e) passed or failed, and
-the installed `3d-tiles-renderer` version if adopted._
+**Chosen: the fallback (own implementation). `3d-tiles-renderer` is not added.**
+
+The decision rests on the source reading of `3d-tiles-renderer@0.5.4` in the pre-implement
+review (`.ai/analysis/pre-implement-2026-11-21-makieta-camera.md`):
+
+- (a) passes: `setCamera` accepts any camera.
+- (b) fails without a workaround: rotate is right-click or Shift+left. Alt+left would need a
+  rewritten `shiftKey` on `pointerdown`, and Shift+left would have to be suppressed.
+- (c) passes: damping is dt-based (`2^(−dt/dampingFactor)`).
+- (d) passes: `start`/`change`/`end` events.
+- (e) only through the private `_raycast` override.
+- (f) — headless drivability from `MakietaInput` — fails, and that is the hard gate. The
+  controls read only DOM pointer and wheel events through their internal `PointerTracker`,
+  so the tests would have to synthesise DOM events under `happy-dom` with
+  `getBoundingClientRect`/`setPointerCapture` stubs.
+
+The own implementation keeps `target`, `yaw`, `pitch`, `distance`, with velocities that decay
+as `e^(−k·dt)` and are integrated analytically (`x += v·(1−e^(−k·dt))/k`). Grab-pan, rigid
+rotation around the pivot and homothetic zoom around the anchor keep the grabbed or anchored
+point exactly under the cursor. Touch arrives as pointer events, so one-finger pan works
+incidentally; it is untested and not claimed.
 
 ## 📝 Delta
 
