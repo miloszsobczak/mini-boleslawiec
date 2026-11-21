@@ -1,0 +1,165 @@
+version: 2
+name: bolec-feature
+description: "Bolec factory loop: spec gate, self-verification, verdict branching, PR with risk assessment"
+nodes:
+  - id: start
+    type: start
+  - id: brainstorm
+    name: Brainstorm
+    type: agent
+    skill: om-brainstorm
+    runner: claude
+    verdicts: [proceed, defer]
+    prompt: |
+      Task / idea:
+      {{task}}
+
+      Explore the idea in the context of the Bolec project.
+      Decide the smallest valuable slice and the main architectural trade-offs.
+      If a pivot is better, describe the pivoted scope and proceed with it.
+      End with CEZ:VERDICT proceed or CEZ:VERDICT defer.
+  - id: plan
+    name: Write spec
+    type: agent
+    skill: om-spec-writing
+    runner: claude
+    prompt: |
+      Write a concrete spec for:
+      {{task}}
+
+      Include approach, files to touch, key decisions, risks, open questions,
+      and an explicit "How this will be verified" section (tests, commands, visual checks).
+      If this is a revision, address the reviewer's and human's objections first.
+  - id: pre-implement
+    name: Pre-implement review
+    type: agent
+    skill: om-pre-implement-spec
+    runner: claude
+    verdicts: [go, no-go]
+    prompt: |
+      Review the spec for:
+      {{task}}
+
+      List assumptions that need human confirmation and rate the risk (low / medium / high).
+      Do not start implementation.
+      End with CEZ:VERDICT go or CEZ:VERDICT no-go.
+  - id: spec-gate
+    name: Human spec approval
+    type: gate.human
+    message: "Spec for '{{task}}' is ready. Approve to start implementation, reject to send it back."
+  - id: spec-retry
+    name: Spec revision loop
+    type: loop
+    max: 2
+  - id: implement
+    name: Implement
+    type: agent
+    skill: om-fix
+    runner: claude
+    prompt: |
+      The human has approved the spec. Implement it for:
+      {{task}}
+
+      Add or update tests that prove the "How this will be verified" section.
+      Run the verification commands yourself before finishing.
+  - id: verify
+    name: Verify
+    type: check
+    command: npm run verify
+  - id: fix-loop
+    name: Fix loop
+    type: loop
+    max: 3
+  - id: fix
+    name: Fix
+    type: agent
+    runner: claude
+    session:
+      continue: implement
+    prompt: |
+      Attempt {{nodes.fix-loop.iteration}} of {{nodes.fix-loop.max}}.
+      Fix the problems below without widening scope beyond the approved spec.
+
+      Last verification output:
+      {{nodes.verify.output}}
+
+      If you are here because of code review, address the review findings.
+  - id: review
+    name: Code review
+    type: agent
+    skill: om-code-review
+    runner: claude
+    verdicts: [approve, changes]
+    prompt: |
+      Review the implementation of:
+      {{task}}
+
+      Check alignment with the approved spec, correctness, LOD/performance,
+      stable identifiers, determinism of the pipeline, and visual style.
+      Flag redundant or tautological tests and unnecessary comments.
+      End with CEZ:VERDICT approve or CEZ:VERDICT changes.
+  - id: open-pr
+    name: Open PR
+    type: agent
+    skill: om-open-pr
+    runner: claude
+    prompt: |
+      Open a draft PR for:
+      {{task}}
+
+      In the description include: what changed, how it was verified (commands + results),
+      a risk assessment (low / medium / high, with reasons), and what the human
+      reviewer should look at first.
+  - id: end-done
+    name: Done
+    type: end
+    status: success
+  - id: end-deferred
+    name: Deferred
+    type: end
+    status: success
+  - id: end-spec-rejected
+    name: Spec rejected
+    type: end
+    status: failed
+  - id: end-failed
+    name: Failed
+    type: end
+    status: failed
+edges:
+  - { from: start.next, to: brainstorm }
+  - { from: brainstorm.proceed, to: plan }
+  - { from: brainstorm.defer, to: end-deferred }
+  - { from: plan.done, to: pre-implement }
+  - { from: pre-implement.go, to: spec-gate }
+  - { from: pre-implement.no-go, to: spec-retry }
+  - { from: spec-gate.approve, to: implement }
+  - { from: spec-gate.reject, to: spec-retry }
+  - { from: spec-retry.repeat, to: plan }
+  - { from: spec-retry.exhausted, to: end-spec-rejected }
+  - { from: implement.done, to: verify }
+  - { from: verify.pass, to: review }
+  - { from: verify.fail, to: fix-loop }
+  - { from: fix-loop.repeat, to: fix }
+  - { from: fix-loop.exhausted, to: end-failed }
+  - { from: fix.done, to: verify }
+  - { from: review.approve, to: open-pr }
+  - { from: review.changes, to: fix-loop }
+  - { from: open-pr.done, to: end-done }
+layout:
+  start: { x: 32, y: 260 }
+  brainstorm: { x: 188, y: 260 }
+  plan: { x: 518, y: 260 }
+  pre-implement: { x: 848, y: 260 }
+  spec-gate: { x: 1178, y: 260 }
+  implement: { x: 1400, y: 260 }
+  verify: { x: 1730, y: 260 }
+  review: { x: 1900, y: 260 }
+  open-pr: { x: 2230, y: 260 }
+  end-done: { x: 2560, y: 260 }
+  spec-retry: { x: 1060, y: 40 }
+  end-spec-rejected: { x: 1400, y: 40 }
+  end-deferred: { x: 518, y: 480 }
+  fix: { x: 1178, y: 480 }
+  fix-loop: { x: 1730, y: 480 }
+  end-failed: { x: 1900, y: 620 }

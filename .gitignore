@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# Source data and generated tiles stay out of the repository (PRD 7.5, 8)
+data/
+tiles/
+
+# Python (pipeline)
+__pycache__/
+*.pyc
+.venv/
